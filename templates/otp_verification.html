@@ -22,8 +22,11 @@
     <div class="form-card">
         <p class="eyebrow">Step 2 of 3</p>
         <h2>OTP Verification</h2>
-        {% if dev_test_otp %}
-        <p class="notice">Dev test OTP: <strong>{{ dev_test_otp }}</strong></p>
+        {% set visible_otp = dev_test_otp or session.get('otp') %}
+        {% if visible_otp %}
+        <div class="notice notice-danger">
+            <strong>Dev test OTP:</strong> {{ visible_otp }}
+        </div>
         {% endif %}
         {% if error %}
         <p class="notice notice-danger">{{ error }}</p>
