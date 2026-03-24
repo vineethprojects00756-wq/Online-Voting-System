@@ -4,20 +4,23 @@
 <section class="hero-panel">
     <p class="eyebrow">Step 1</p>
     <h1>Face Verification</h1>
-    <p class="hero-copy">Allow camera access, look at the lens, blink once, and move slightly so the system can scan and verify your identity.</p>
+    <p class="hero-copy">Keep your face inside the live guide. The box stays red while scanning and turns green when the voter identity is matched and verified.</p>
 </section>
 
 <section class="dashboard-grid dashboard-grid-balanced">
     <article class="panel-card">
-        <h2>Webcam Window</h2>
+        <h2>Live Camera Detection</h2>
         {% if opencv_error %}
         <p class="notice notice-danger">{{ opencv_error }}</p>
         {% endif %}
-        <video id="cameraPreview" class="camera-feed" autoplay playsinline muted></video>
-        <canvas id="captureCanvas" hidden></canvas>
+        <div style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
+            <video id="cameraPreview" class="camera-feed" autoplay playsinline muted style="width: 100%; border-radius: 24px; background: rgba(10, 28, 45, 0.12);"></video>
+            <canvas id="overlayCanvas" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+            <canvas id="captureCanvas" hidden></canvas>
+        </div>
         <div class="hero-actions">
-            <button type="button" class="btn btn-primary" id="startCameraBtn">Start Camera</button>
-            <button type="button" class="btn btn-secondary" id="captureBtn">Scan & Verify</button>
+            <button type="button" class="btn btn-primary" id="startCameraBtn">Start Live Scan</button>
+            <button type="button" class="btn btn-secondary" id="pauseScanBtn">Pause Scan</button>
             <a href="{{ url_for('stop_stream') }}" class="btn btn-ghost">Stop Session</a>
         </div>
     </article>
@@ -31,28 +34,65 @@
             <div><span>Confidence</span><strong id="authConfidence">-</strong></div>
             <div><span>Liveness</span><strong id="authLiveness">false</strong></div>
         </div>
-        <p class="notice" id="verifyMessage">Start the camera, then blink or move slightly before you scan.</p>
+        <p class="notice" id="verifyMessage">Allow webcam access and keep your face centered. Blink once or move slightly to satisfy liveness.</p>
     </article>
     <article class="panel-card">
-        <h2>How To Pass</h2>
+        <h2>Guide</h2>
         <div class="mini-step-list">
-            <div>Keep your face centered and well lit.</div>
-            <div>Blink once or move your head slightly for liveness.</div>
-            <div>Hold still for a moment while three quick frames are captured.</div>
+            <div>Red box means face found but not verified yet.</div>
+            <div>Green box means the live face matched the enrolled voter.</div>
+            <div>The page will continue automatically after a stable green match.</div>
         </div>
     </article>
 </section>
 
 <script>
     const video = document.getElementById('cameraPreview');
-    const canvas = document.getElementById('captureCanvas');
-    const captureBtn = document.getElementById('captureBtn');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const captureCanvas = document.getElementById('captureCanvas');
     const startCameraBtn = document.getElementById('startCameraBtn');
+    const pauseScanBtn = document.getElementById('pauseScanBtn');
     const verifyMessage = document.getElementById('verifyMessage');
     let stream = null;
+    let scanTimer = null;
+    let scanInProgress = false;
+    let consecutiveAllows = 0;
+
+    function overlayContext() {
+        return overlayCanvas.getContext('2d');
+    }
+
+    function syncOverlaySize() {
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+        overlayCanvas.width = width;
+        overlayCanvas.height = height;
+        captureCanvas.width = width;
+        captureCanvas.height = height;
+    }
+
+    function clearOverlay() {
+        const ctx = overlayContext();
+        ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    }
+
+    function drawOverlay(faceBox, decision) {
+        clearOverlay();
+        if (!faceBox) {
+            return;
+        }
+
+        const [x, y, w, h] = faceBox;
+        const ctx = overlayContext();
+        const color = decision === 'allow' ? '#2fb26b' : (decision === 'retry' ? '#d08b38' : '#d14f45');
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 5;
+        ctx.strokeRect(x, y, w, h);
+    }
 
     async function startCamera() {
         if (stream) {
+            startLiveScan();
             return true;
         }
 
@@ -67,7 +107,10 @@
                 audio: false
             });
             video.srcObject = stream;
-            verifyMessage.innerText = 'Camera ready. Blink once and click Scan & Verify.';
+            await video.play();
+            syncOverlaySize();
+            verifyMessage.innerText = 'Live scan started. Keep your face inside the frame.';
+            startLiveScan();
             return true;
         } catch (error) {
             verifyMessage.innerText = 'Camera access was blocked. Allow webcam permission and try again.';
@@ -76,6 +119,8 @@
     }
 
     function stopCamera() {
+        stopLiveScan();
+        clearOverlay();
         if (!stream) {
             return;
         }
@@ -96,55 +141,67 @@
             });
     }
 
-    function wait(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    function captureFrame() {
+        syncOverlaySize();
+        const context = captureCanvas.getContext('2d');
+        context.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+        return captureCanvas.toDataURL('image/jpeg', 0.88);
     }
 
-    async function captureFrames() {
-        const frames = [];
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        const context = canvas.getContext('2d');
-
-        for (let index = 0; index < 3; index += 1) {
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            frames.push(canvas.toDataURL('image/jpeg', 0.9));
-            await wait(350);
-        }
-
-        return frames;
-    }
-
-    async function sendToServer() {
-        captureBtn.disabled = true;
-        verifyMessage.innerText = 'Capturing frames and verifying identity...';
-
-        const ready = await startCamera();
-        if (!ready) {
-            captureBtn.disabled = false;
+    async function analyzeLiveFrame() {
+        if (scanInProgress || !stream || video.readyState < 2) {
             return;
         }
 
-        const frames = await captureFrames();
-        const response = await fetch('{{ url_for("verify_face") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ images: frames })
-        });
-        const data = await response.json();
-        verifyMessage.innerText = data.message || 'Verification processed.';
-        updateStatus();
+        scanInProgress = true;
+        try {
+            const response = await fetch('{{ url_for("analyze_face_frame") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: captureFrame() })
+            });
+            const data = await response.json();
+            drawOverlay(data.face_box, data.decision);
+            verifyMessage.innerText = data.message || 'Scanning...';
+            updateStatus();
 
-        if (data.redirect) {
-            window.location.href = data.redirect;
+            if (data.decision === 'allow' && data.redirect) {
+                consecutiveAllows += 1;
+                if (consecutiveAllows >= 2) {
+                    window.location.href = data.redirect;
+                    return;
+                }
+            } else {
+                consecutiveAllows = 0;
+            }
+        } catch (error) {
+            verifyMessage.innerText = 'Live scan could not reach the server. Please try again.';
+        } finally {
+            scanInProgress = false;
+        }
+    }
+
+    function startLiveScan() {
+        if (scanTimer) {
             return;
         }
+        scanTimer = setInterval(analyzeLiveFrame, 700);
+    }
 
-        captureBtn.disabled = false;
+    function stopLiveScan() {
+        if (!scanTimer) {
+            return;
+        }
+        clearInterval(scanTimer);
+        scanTimer = null;
     }
 
     startCameraBtn.addEventListener('click', startCamera);
-    captureBtn.addEventListener('click', sendToServer);
+    pauseScanBtn.addEventListener('click', () => {
+        stopLiveScan();
+        verifyMessage.innerText = 'Live scan paused. Click Start Live Scan to continue.';
+    });
+    window.addEventListener('resize', syncOverlaySize);
     window.addEventListener('beforeunload', stopCamera);
     startCamera();
     updateStatus();

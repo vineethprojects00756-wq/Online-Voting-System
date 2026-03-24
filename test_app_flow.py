@@ -302,7 +302,7 @@ class AppFlowTestCase(unittest.TestCase):
         response = self.client.get("/face_verification")
         self.assertEqual(response.status_code, 200)
         self.assertIn("Face Verification", response.get_data(as_text=True))
-        self.assertIn("Scan & Verify", response.get_data(as_text=True))
+        self.assertIn("Start Live Scan", response.get_data(as_text=True))
         self.assertIn("Verification Status", response.get_data(as_text=True))
 
     def test_vote_page_renders_candidates_when_access_is_allowed(self):

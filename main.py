@@ -392,6 +392,7 @@ def verify_browser_frames(expected_aadhar, images):
                 "identity": identity,
                 "confidence": round(float(confidence), 2),
                 "liveness": liveness_result,
+                "face_box": [int(x), int(y), int(w), int(h)],
             }
         )
 
@@ -406,6 +407,8 @@ def verify_browser_frames(expected_aadhar, images):
         return {
             "status": "retry",
             "message": "No recognizable face detected. Try again with better lighting.",
+            "decision": "retry",
+            "face_box": None,
         }, 400
 
     best_detection = min(detections, key=lambda item: item["confidence"])
@@ -448,12 +451,16 @@ def verify_browser_frames(expected_aadhar, images):
             "message": "Face verified successfully.",
             "redirect": url_for('vote'),
             "voter_id": voter["voter_id"] if voter else None,
+            "decision": "allow",
+            "face_box": best_detection["face_box"],
         }, 200
 
     if auth_result["decision"] == "retry":
         return {
             "status": "retry",
             "message": auth_result["status"],
+            "decision": "retry",
+            "face_box": best_detection["face_box"],
         }, 400
 
     redirect_target = url_for('vote_denied') if auth_result["face_match"] else None
@@ -462,6 +469,8 @@ def verify_browser_frames(expected_aadhar, images):
         "message": auth_result["status"],
         "redirect": redirect_target,
         "voter_id": voter["voter_id"] if voter else None,
+        "decision": auth_result["decision"],
+        "face_box": best_detection["face_box"],
     }, 403
 
 
@@ -987,6 +996,21 @@ def verify_face():
             "voter_id": voter["voter_id"],
         }
     )
+
+
+@app.route('/analyze_face_frame', methods=['POST'])
+def analyze_face_frame():
+    if not has_voter_session() or not session.get('otp_verified'):
+        return jsonify({"status": "login_required", "message": "Login and OTP verification are required."}), 403
+
+    voter = get_voter_session_record()
+    if voter is None:
+        return jsonify({"status": "not_found", "message": "Voter record unavailable."}), 404
+
+    payload = request.get_json(silent=True) or {}
+    image = payload.get("image") if isinstance(payload, dict) else None
+    response_body, status_code = verify_browser_frames(voter["aadhaar"], [image] if image else [])
+    return jsonify(response_body), status_code
 
 
 @app.route('/voter/voting-status')
