@@ -1,0 +1,56 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Analytics{% endblock %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<section class="hero-panel">
+    <p class="eyebrow">Analytics</p>
+    <h1>Live voting statistics</h1>
+    <p class="hero-copy">Track turnout and candidate performance visually.</p>
+</section>
+
+<section class="dashboard-grid dashboard-grid-wide">
+    <article class="panel-card">
+        <h2>Turnout Graph</h2>
+        <canvas id="turnoutChart" height="140"></canvas>
+    </article>
+    <article class="panel-card">
+        <h2>Votes Per Candidate</h2>
+        <canvas id="candidateChart" height="140"></canvas>
+    </article>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+    const resultRows = {{ vote_results | tojson }};
+    const turnoutChart = document.getElementById('turnoutChart');
+    if (turnoutChart) {
+        new Chart(turnoutChart, {
+            type: 'doughnut',
+            data: {
+                labels: ['Votes Cast', 'Remaining Voters'],
+                datasets: [{
+                    data: [{{ metrics.votes_cast if metrics else 0 }}, {{ metrics.remaining_voters if metrics else 0 }}],
+                    backgroundColor: ['#f4b942', '#58c7ff']
+                }]
+            }
+        });
+    }
+    const candidateChart = document.getElementById('candidateChart');
+    if (candidateChart) {
+        new Chart(candidateChart, {
+            type: 'bar',
+            data: {
+                labels: resultRows.map(row => row.name),
+                datasets: [{
+                    label: 'Votes',
+                    data: resultRows.map(row => row.votes),
+                    backgroundColor: '#58c7ff'
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+    }
+</script>
+{% endblock %}

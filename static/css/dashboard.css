@@ -1,0 +1,5 @@
+﻿.dashboard-grid,
+.dashboard-grid-balanced,
+.dashboard-grid-wide {
+    gap: 20px;
+}

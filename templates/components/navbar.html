@@ -1,0 +1,15 @@
+﻿<nav class="site-nav">
+    <div class="nav-brand">
+        <a href="{{ url_for('home') }}" class="brand-link">Smart Voting System</a>
+    </div>
+    <div class="nav-links">
+        <a href="{{ url_for('home') }}" class="nav-link">Home</a>
+        <a href="{{ url_for('signup') }}" class="nav-link">Register</a>
+        <a href="{{ url_for('login') }}" class="nav-link">Voter Login</a>
+        {% if session.get('admin_authenticated') %}
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin Console</a>
+        {% else %}
+        <a href="{{ url_for('admin_login') }}" class="nav-link">Admin Login</a>
+        {% endif %}
+    </div>
+</nav>

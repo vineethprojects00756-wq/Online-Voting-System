@@ -1,0 +1,30 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}About Smart Voting System{% endblock %}
+{% block main_class %}landing-page{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <p class="eyebrow">About</p>
+    <h1>Building trust in secure digital elections.</h1>
+    <p class="hero-copy">
+        This platform combines verified identity, liveness checks, and encrypted vote storage to keep
+        the election flow transparent and secure for both voters and administrators.
+    </p>
+</section>
+
+<section class="dashboard-grid">
+    <article class="panel-card">
+        <h2>Security-First Workflow</h2>
+        <p>Every action moves through credential checks, OTP verification, live face authentication, and vote encryption.</p>
+    </article>
+    <article class="panel-card">
+        <h2>Operational Clarity</h2>
+        <p>Admins manage candidates, monitor turnout, and audit events from a protected console.</p>
+    </article>
+    <article class="panel-card">
+        <h2>Verified Participation</h2>
+        <p>Voter eligibility and status are tracked in real time to prevent duplicate or unauthorized votes.</p>
+    </article>
+</section>
+{% endblock %}

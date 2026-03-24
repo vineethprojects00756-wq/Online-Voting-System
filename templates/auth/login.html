@@ -1,0 +1,59 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Voter Login{% endblock %}
+{% block main_class %}form-page{% endblock %}
+
+{% block content %}
+<section class="form-wrapper palette-ocean">
+    <div class="form-copy">
+        <p class="eyebrow">Voter Access</p>
+        <div class="hero-kicker">
+            <strong>Citizen Entry</strong>
+            <span>Secure voter sign in</span>
+        </div>
+        <h1>Sign in to continue.</h1>
+        <p class="hero-copy">
+            Enter your Aadhaar number and password.
+        </p>
+        <div class="highlight-grid">
+            <div class="highlight-card">
+                <span>Identity</span>
+                <strong>Aadhaar login</strong>
+            </div>
+            <div class="highlight-card">
+                <span>Security</span>
+                <strong>OTP and face check</strong>
+            </div>
+        </div>
+        <div class="content-photo-card" style="background-image: url('{{ url_for('static', filename='inp1.jpg') }}');">
+            <div class="content-photo-copy">
+                <span>Voter Access</span>
+                <strong>Simple entry for verified voters.</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card form-shell">
+        <p class="eyebrow">Step 1 of 3</p>
+        <h2>Voter Login</h2>
+        {% if error %}
+        <p class="notice notice-danger">{{ error }}</p>
+        {% endif %}
+        <form action="{{ url_for('login') }}" method="POST" class="smart-form">
+            <label>Aadhaar Number</label>
+            <input type="text" name="aadhar" inputmode="numeric" maxlength="12" placeholder="Enter 12-digit Aadhaar" required>
+
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Enter your password" required>
+
+            <button type="submit" class="btn btn-primary form-submit">Continue to OTP</button>
+        </form>
+        <div class="step-rail">
+            <div class="step-chip"><strong>01</strong><span>Login</span></div>
+            <div class="step-chip"><strong>02</strong><span>OTP</span></div>
+            <div class="step-chip"><strong>03</strong><span>Face</span></div>
+        </div>
+        <p><a href="{{ url_for('home') }}" class="text-link">Return to Home</a></p>
+    </div>
+</section>
+{% endblock %}

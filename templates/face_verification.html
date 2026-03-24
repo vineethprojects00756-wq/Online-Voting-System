@@ -1,0 +1,102 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Authentication Module{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+
+{% block content %}
+<section class="dashboard-header palette-jade">
+    <div>
+        <p class="eyebrow">Module 3</p>
+        <div class="hero-kicker">
+            <strong>Biometric Gate</strong>
+            <span>Real-time verification</span>
+        </div>
+        <h1>Face verification</h1>
+        <p class="hero-copy">
+            Verify identity before ballot access.
+        </p>
+        <div class="highlight-grid">
+            <div class="highlight-card">
+                <span>Checks</span>
+                <strong>Match and liveness</strong>
+            </div>
+            <div class="highlight-card">
+                <span>Outcome</span>
+                <strong>Access on approval</strong>
+            </div>
+        </div>
+        <div class="content-photo-card" style="background-image: url('{{ url_for('static', filename='inp3.jpg') }}');">
+            <div class="content-photo-copy">
+                <span>Identity Assurance</span>
+                <strong>Fast, simple, secure verification.</strong>
+            </div>
+        </div>
+    </div>
+    <div class="hero-actions">
+        <a href="{{ url_for('vote') }}" class="btn btn-primary">Proceed to Vote</a>
+        <a href="{{ url_for('stop_stream') }}" class="btn btn-ghost">Stop Stream</a>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">Return to Home</a>
+    </div>
+</section>
+
+{% if opencv_error %}
+<p class="notice">{{ opencv_error }}</p>
+{% endif %}
+
+<section class="dashboard-grid">
+    <article class="panel-card stream-frame">
+        <h2>Live Camera Input</h2>
+        <img src="{{ url_for('video_feed') }}" alt="Face Recognition Stream" class="camera-feed">
+    </article>
+
+    <article class="panel-card palette-jade">
+        <h2>Checks</h2>
+        <div class="security-badge">Secure path active</div>
+        <div class="module-steps">
+            <div>Detect face</div>
+            <div>Match voter</div>
+            <div>Check status</div>
+            <div>Allow or reject</div>
+        </div>
+     </article>
+
+    <article class="panel-card palette-ocean">
+        <h2>Authentication Status</h2>
+        <div class="metric-list auth-list auth-status-grid">
+            <div><span>Status</span><strong id="authStatus">Waiting for face...</strong></div>
+            <div><span>Decision</span><strong id="authDecision">pending</strong></div>
+            <div><span>Face Match</span><strong id="authFaceMatch">false</strong></div>
+            <div><span>Voter ID</span><strong id="authVoterId">-</strong></div>
+            <div><span>Name</span><strong id="authName">-</strong></div>
+            <div><span>Constituency</span><strong id="authConstituency">-</strong></div>
+            <div><span>Has Voted</span><strong id="authHasVoted">-</strong></div>
+            <div><span>Confidence</span><strong id="authConfidence">-</strong></div>
+            <div><span>Liveness Passed</span><strong id="authLiveness">false</strong></div>
+            <div><span>Detail</span><strong id="authLivenessMessage">-</strong></div>
+        </div>
+    </article>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateStatus() {
+        fetch('{{ url_for('status') }}')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("authStatus").innerText = data.status;
+                document.getElementById("authDecision").innerText = data.decision;
+                document.getElementById("authFaceMatch").innerText = String(data.face_match);
+                document.getElementById("authVoterId").innerText = data.voter_id || "-";
+                document.getElementById("authName").innerText = data.name || "-";
+                document.getElementById("authConstituency").innerText = data.constituency || "-";
+                document.getElementById("authHasVoted").innerText = data.has_voted === null ? "-" : String(data.has_voted);
+                document.getElementById("authConfidence").innerText = data.confidence === null ? "-" : String(data.confidence);
+                document.getElementById("authLiveness").innerText = String(data.liveness_passed);
+                document.getElementById("authLivenessMessage").innerText = data.liveness_message || "-";
+            });
+    }
+    updateStatus();
+    setInterval(updateStatus, 800);
+</script>
+{% endblock %}

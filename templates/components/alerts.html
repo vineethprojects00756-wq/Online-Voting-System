@@ -1,0 +1,15 @@
+{% if error %}
+<p class="notice notice-danger">{{ error }}</p>
+{% endif %}
+{% if dashboard_notice %}
+<p class="notice">{{ dashboard_notice }}</p>
+{% endif %}
+{% if page_notice %}
+<p class="notice">{{ page_notice }}</p>
+{% endif %}
+{% if database_error %}
+<p class="notice notice-danger">Database issue: {{ database_error }}</p>
+{% endif %}
+{% if opencv_error %}
+<p class="notice">{{ opencv_error }}</p>
+{% endif %}

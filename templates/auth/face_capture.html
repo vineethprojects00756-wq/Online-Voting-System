@@ -1,0 +1,36 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Face Capture{% endblock %}
+{% block main_class %}form-page{% endblock %}
+
+{% block content %}
+<section class="form-wrapper">
+    <div class="form-copy">
+        <p class="eyebrow">Identity Capture</p>
+        <h1>Capture a live face sample.</h1>
+        <p class="hero-copy">
+            Use a well-lit environment and keep your face centered in the frame. This step supports
+            registration and verification workflows.
+        </p>
+        <div class="mini-step-list">
+            <div>Ensure the camera is connected.</div>
+            <div>Keep your face inside the guide.</div>
+            <div>Proceed once capture completes.</div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <p class="eyebrow">Capture</p>
+        <h2>Live Face Capture</h2>
+        <div class="capture-frame">
+            <p class="empty-copy">Camera feed placeholder. Integrate with the capture endpoint as needed.</p>
+        </div>
+        <button type="button" class="btn btn-primary form-submit">Start Capture</button>
+        <p><a href="{{ url_for('home') }}" class="text-link">Return to Home</a></p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/face_capture.js') }}"></script>
+{% endblock %}

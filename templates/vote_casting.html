@@ -1,0 +1,76 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Vote Casting Module{% endblock %}
+{% block main_class %}form-page{% endblock %}
+
+{% block content %}
+<section class="form-wrapper palette-violet">
+    <div class="form-copy">
+        <p class="eyebrow">Module 5</p>
+        <div class="hero-kicker">
+            <strong>Secure Ballot</strong>
+            <span>Private candidate selection</span>
+        </div>
+        <h1>Cast your vote.</h1>
+        <p class="hero-copy">
+            Choose one candidate for your constituency.
+        </p>
+        <div class="highlight-grid">
+            <div class="highlight-card">
+                <span>Constituency</span>
+                <strong>Eligible candidates only</strong>
+            </div>
+            <div class="highlight-card">
+                <span>Integrity</span>
+                <strong>One secure submission</strong>
+            </div>
+        </div>
+        <div class="content-photo-card" style="background-image: url('{{ url_for('static', filename='inp2.jpg') }}');">
+            <div class="content-photo-copy">
+                <span>Ballot Experience</span>
+                <strong>Clear and focused ballot selection.</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card form-shell">
+        <p class="eyebrow">Eligible Voter</p>
+        <h2>{{ voter.name }}</h2>
+        <div class="ballot-header">
+            <div>
+                <p class="card-subtitle">{{ voter.voter_id }}</p>
+                <div class="security-badge">Verified voter session</div>
+            </div>
+            <div class="ballot-meta">
+                <span class="meta-pill">{{ voter.constituency }}</span>
+                <span class="meta-pill">One vote only</span>
+            </div>
+        </div>
+
+        {% if error %}
+        <p class="notice notice-danger">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" class="smart-form">
+            <label>Candidate List</label>
+            <div class="candidate-list candidate-list-ballot">
+                {% for candidate in candidates %}
+                <label class="candidate-option candidate-option-ballot">
+                    <input type="radio" name="candidate_id" value="{{ candidate.id }}" required>
+                    <div class="candidate-identity">
+                        <div class="candidate-emblem">{{ candidate.name[:1] }}</div>
+                        <div class="candidate-text">
+                            <strong>{{ candidate.name }}</strong>
+                            <span>Candidate for {{ voter.constituency }}</span>
+                        </div>
+                    </div>
+                    <small class="candidate-party">{{ candidate.party }}</small>
+                </label>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary form-submit">Submit Vote</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

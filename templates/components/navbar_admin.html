@@ -1,0 +1,13 @@
+<nav class="role-navbar">
+    <a href="{{ url_for('admin_dashboard') }}" class="brand-link">Admin Console</a>
+    <div class="role-nav-links">
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_manage_voters') }}">Manage Voters</a>
+        <a href="{{ url_for('admin_manage_candidates') }}">Manage Candidates</a>
+        <a href="{{ url_for('admin_election_control') }}">Election Control</a>
+        <a href="{{ url_for('admin_analytics') }}">Analytics</a>
+        <a href="{{ url_for('admin_results') }}">Results</a>
+        <a href="{{ url_for('admin_logs') }}">Logs</a>
+        <a href="{{ url_for('admin_logout') }}">Logout</a>
+    </div>
+</nav>

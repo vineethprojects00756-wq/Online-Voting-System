@@ -1,0 +1,60 @@
+{% extends 'voter/voter_layout.html' %}
+{% block title %}Voter Dashboard{% endblock %}
+{% block content %}
+<section class="hero-panel hero-panel-split">
+    <div>
+        <p class="eyebrow">Voter Dashboard</p>
+        <h1>Welcome{% if voter %}, {{ voter.name }}{% endif %}</h1>
+        <p class="hero-copy">
+            Follow the guided workflow: review your status, complete face verification, confirm eligibility,
+            and cast your vote when the election is active.
+        </p>
+        <div class="hero-actions">
+            {% if election_state.is_active %}
+            <a href="{{ url_for('face_verification') }}" class="btn btn-primary">Start Face Verification</a>
+            {% else %}
+            <span class="status-badge status-closed">Election Not Started</span>
+            {% endif %}
+            <a href="{{ url_for('voting_status') }}" class="btn btn-ghost">Check Voting Status</a>
+        </div>
+    </div>
+    <aside class="hero-sidecard">
+        <p class="eyebrow">Session Summary</p>
+        <div class="hero-mini-grid">
+            <div class="info-tile"><span>Election Status</span><strong>{{ election_state.status }}</strong></div>
+            <div class="info-tile"><span>Vote Status</span><strong>{{ vote_status }}</strong></div>
+            <div class="info-tile"><span>Current Step</span><strong>{{ workflow_step|replace('_', ' ')|title }}</strong></div>
+        </div>
+    </aside>
+</section>
+
+<section class="dashboard-grid dashboard-grid-balanced">
+    <article class="panel-card">
+        <p class="eyebrow">Instructions</p>
+        <h2>Voting instructions</h2>
+        <div class="mini-step-list">
+            <div>Keep your webcam ready before face verification.</div>
+            <div>Only verified and eligible voters can access the ballot.</div>
+            <div>Review your candidate selection carefully before confirming.</div>
+        </div>
+    </article>
+    <article class="panel-card">
+        <p class="eyebrow">Election Status</p>
+        <h2>Voting availability</h2>
+        <div class="mini-step-list">
+            <div>Status: {{ election_state.status }}</div>
+            <div>{% if election_state.is_active %}Voting is open for eligible voters.{% else %}Voting is currently closed.{% endif %}</div>
+            <div>Updated: {{ election_state.updated_at }}</div>
+        </div>
+    </article>
+    <article class="panel-card">
+        <p class="eyebrow">Your Status</p>
+        <h2>Vote status</h2>
+        <div class="mini-step-list">
+            <div>Voter ID: {{ voter.voter_id if voter else '-' }}</div>
+            <div>Constituency: {{ voter.constituency if voter else '-' }}</div>
+            <div>{% if voter and voter.has_voted %}Your vote has already been recorded.{% else %}You have not voted yet.{% endif %}</div>
+        </div>
+    </article>
+</section>
+{% endblock %}

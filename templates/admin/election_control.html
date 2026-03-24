@@ -1,0 +1,25 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Election Control{% endblock %}
+{% block content %}
+<section class="hero-panel">
+    <p class="eyebrow">Election Control</p>
+    <h1>Control election state</h1>
+    <p class="hero-copy">Voting is allowed only when the system status is ACTIVE.</p>
+    <div class="hero-actions">
+        <form method="POST"><input type="hidden" name="action" value="start"><button type="submit" class="btn btn-primary">Start Election</button></form>
+        <form method="POST"><input type="hidden" name="action" value="stop"><button type="submit" class="btn btn-secondary">Stop Election</button></form>
+        <form method="POST"><input type="hidden" name="action" value="reset"><button type="submit" class="btn btn-ghost">Reset Election</button></form>
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <article class="panel-card">
+        <h2>Current State</h2>
+        <div class="mini-step-list">
+            <div>Status: {{ election_state.status }}</div>
+            <div>Updated: {{ election_state.updated_at }}</div>
+            <div>{% if election_state.is_active %}Voting is currently enabled.{% else %}Voting is currently disabled.{% endif %}</div>
+        </div>
+    </article>
+</section>
+{% endblock %}

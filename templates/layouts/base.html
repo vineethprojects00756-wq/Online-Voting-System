@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Voting System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}app-shell{% endblock %}">
+    <div class="page-bg"></div>
+    {% block main %}
+    <main class="{% block main_class %}page{% endblock %}">
+        {% block navbar %}
+        {% include 'components/navbar.html' %}
+        {% endblock %}
+        {% include 'components/alerts.html' %}
+        {% block content %}{% endblock %}
+        {% block footer %}
+        {% include 'components/footer.html' %}
+        {% endblock %}
+    </main>
+    {% endblock %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

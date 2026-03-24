@@ -1,0 +1,48 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Manage Candidates{% endblock %}
+{% block content %}
+<section class="dashboard-grid dashboard-grid-balanced">
+    <article class="panel-card">
+        <p class="eyebrow">Add Candidate</p>
+        <h2>Create candidate record</h2>
+        <form action="{{ url_for('admin_add_candidate') }}" method="POST" class="smart-form">
+            <label>Candidate ID</label>
+            <input type="text" name="candidate_id" required>
+            <label>Name</label>
+            <input type="text" name="name" required>
+            <label>Party</label>
+            <input type="text" name="party" required>
+            <label>Constituency</label>
+            <input type="text" name="constituency" required>
+            <button type="submit" class="btn btn-primary form-submit">Add Candidate</button>
+        </form>
+    </article>
+    <article class="panel-card">
+        <p class="eyebrow">Edit / Delete</p>
+        <h2>Candidate Directory</h2>
+        <div class="model-list">
+            {% for candidate in candidates %}
+            <details class="model-item">
+                <summary>{{ candidate.candidate_id }} | {{ candidate.name }}</summary>
+                <form method="POST" class="smart-form inline-form">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="candidate_id" value="{{ candidate.candidate_id }}">
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ candidate.name }}" required>
+                    <label>Party</label>
+                    <input type="text" name="party" value="{{ candidate.party }}" required>
+                    <label>Constituency</label>
+                    <input type="text" name="constituency" value="{{ candidate.constituency }}" required>
+                    <button type="submit" class="btn btn-secondary">Update</button>
+                </form>
+                <form method="POST" class="inline-form-inline">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="candidate_id" value="{{ candidate.candidate_id }}">
+                    <button type="submit" class="btn btn-ghost">Delete</button>
+                </form>
+            </details>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

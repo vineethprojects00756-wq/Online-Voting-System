@@ -1,0 +1,57 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Voter Registration{% endblock %}
+{% block main_class %}form-page{% endblock %}
+
+{% block content %}
+<section class="form-wrapper">
+    <div class="form-copy">
+        <p class="eyebrow">Module 1</p>
+        <h1>User Registration Module</h1>
+        <p class="hero-copy">
+            Register the voter, generate a grayscale dataset, assign a unique voter ID,
+            and save the voter record to MongoDB.
+        </p>
+        <div class="module-steps">
+            <div>Inputs: Aadhaar, Name, Age, Constituency, Face Images</div>
+            <div>Process: detect face, crop, convert to grayscale, and build 30 samples</div>
+            <div>Storage: dataset per voter and MongoDB voter record</div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        {% if error %}
+        <p class="notice notice-danger">{{ error }}</p>
+        {% endif %}
+        <form action="{{ url_for('signup') }}" method="POST" enctype="multipart/form-data" class="smart-form">
+            <label>Name</label>
+            <input type="text" name="name" required>
+
+            <label>Email</label>
+            <input type="email" name="email" required>
+
+            <label>Phone</label>
+            <input type="text" name="phone" required>
+
+            <label>Age</label>
+            <input type="number" name="age" min="18" required>
+
+            <label>Constituency</label>
+            <input type="text" name="constituency" required>
+
+            <label>Aadhaar</label>
+            <input type="text" name="aadhar" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <label>Face Images</label>
+            <input type="file" name="images" accept="image/*" multiple required>
+            <p class="field-help">Upload multiple clear face images. The system expands them into a 30-sample grayscale dataset.</p>
+
+            <button type="submit" class="btn btn-primary form-submit">Create Voter Dataset</button>
+        </form>
+        <p><a href="{{ url_for('home') }}" class="text-link">Return to Home</a></p>
+    </div>
+</section>
+{% endblock %}

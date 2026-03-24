@@ -1,0 +1,77 @@
+{% extends 'voter/voter_layout.html' %}
+{% block title %}Face Verification{% endblock %}
+{% block content %}
+<section class="hero-panel">
+    <p class="eyebrow">Step 1</p>
+    <h1>Face Verification</h1>
+    <p class="hero-copy">Use the live webcam feed or run guided verification to authenticate the voter before eligibility check.</p>
+</section>
+
+<section class="dashboard-grid dashboard-grid-balanced">
+    <article class="panel-card">
+        <h2>Webcam Window</h2>
+        {% if camera_error %}
+        <p class="notice">{{ camera_error }}</p>
+        {% endif %}
+        {% if server_camera_enabled %}
+        <img src="{{ url_for('video_feed') }}" alt="Face Recognition Stream" class="camera-feed">
+        {% else %}
+        <div class="notice">Live stream unavailable in this deployment. Guided verification remains available below.</div>
+        {% endif %}
+        <div class="hero-actions">
+            <button type="button" class="btn btn-primary" id="captureBtn">Capture & Verify</button>
+            <a href="{{ url_for('stop_stream') }}" class="btn btn-ghost">Stop Camera</a>
+        </div>
+    </article>
+    <article class="panel-card">
+        <h2>Verification Status</h2>
+        <div class="metric-list auth-list">
+            <div><span>Face Detection</span><strong id="authFaceMatch">false</strong></div>
+            <div><span>Verification Result</span><strong id="authDecision">pending</strong></div>
+            <div><span>Status Message</span><strong id="authStatus">Waiting for face...</strong></div>
+            <div><span>Voter ID</span><strong id="authVoterId">-</strong></div>
+        </div>
+        <p class="notice" id="verifyMessage">Capture a clear frame and continue to the next step.</p>
+    </article>
+    <article class="panel-card">
+        <h2>Next Step</h2>
+        <div class="mini-step-list">
+            <div>Verification checks identity and eligibility together.</div>
+            <div>If the voter has already voted, access is denied.</div>
+            <div>If verified, the voter is redirected to the ballot page.</div>
+        </div>
+    </article>
+</section>
+
+<script>
+    function updateStatus() {
+        fetch('{{ url_for("status") }}')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("authStatus").innerText = data.status;
+                document.getElementById("authDecision").innerText = data.decision;
+                document.getElementById("authFaceMatch").innerText = String(data.face_match);
+                document.getElementById("authVoterId").innerText = data.voter_id || "-";
+            });
+    }
+
+    function sendToServer() {
+        fetch('{{ url_for("verify_face") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'capture' })
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('verifyMessage').innerText = data.message || 'Verification processed.';
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                }
+            });
+    }
+
+    document.getElementById('captureBtn').addEventListener('click', sendToServer);
+    updateStatus();
+    setInterval(updateStatus, 800);
+</script>
+{% endblock %}

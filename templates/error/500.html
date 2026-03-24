@@ -1,0 +1,15 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}500 Server Error{% endblock %}
+{% block main_class %}form-page{% endblock %}
+
+{% block content %}
+<section class="form-wrapper">
+    <div class="form-copy">
+        <p class="eyebrow">System Error</p>
+        <h1>500 - Server Error</h1>
+        <p class="hero-copy">Something went wrong on our side. Please try again shortly.</p>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">Return Home</a>
+    </div>
+</section>
+{% endblock %}

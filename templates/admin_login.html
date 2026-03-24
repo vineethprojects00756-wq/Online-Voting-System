@@ -1,0 +1,54 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Admin Login{% endblock %}
+{% block main_class %}form-page{% endblock %}
+
+{% block content %}
+<section class="form-wrapper palette-rose">
+    <div class="form-copy">
+        <p class="eyebrow">Operations Access</p>
+        <div class="hero-kicker">
+            <strong>Restricted Console</strong>
+            <span>Admin access only</span>
+        </div>
+        <h1>Admin sign in.</h1>
+        <p class="hero-copy">
+            Access the election management dashboard.
+        </p>
+        <div class="highlight-grid">
+            <div class="highlight-card">
+                <span>Scope</span>
+                <strong>Voters and candidates</strong>
+            </div>
+            <div class="highlight-card">
+                <span>Visibility</span>
+                <strong>Results and logs</strong>
+            </div>
+        </div>
+        <div class="content-photo-card" style="background-image: url('{{ url_for('static', filename='inp2.jpg') }}');">
+            <div class="content-photo-copy">
+                <span>Operations Console</span>
+                <strong>Clean access to election controls.</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card form-shell">
+        <p class="eyebrow">Admin Only</p>
+        <h2>Admin Login</h2>
+        {% if error %}
+        <p class="notice notice-danger">{{ error }}</p>
+        {% endif %}
+        <form action="{{ url_for('admin_login') }}" method="POST" class="smart-form">
+            <label>Username</label>
+            <input type="text" name="username" placeholder="Enter admin username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Enter admin password" required>
+
+            <button type="submit" class="btn btn-primary form-submit">Open Admin Dashboard</button>
+        </form>
+        <p><a href="{{ url_for('home') }}" class="text-link">Return to Home</a></p>
+    </div>
+</section>
+{% endblock %}

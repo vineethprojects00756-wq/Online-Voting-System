@@ -1,0 +1,17 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Results{% endblock %}
+{% block content %}
+<section class="panel-card">
+    <p class="eyebrow">Results</p>
+    <h1>Final election results</h1>
+    <div class="model-list">
+        {% for result in vote_results %}
+        <div class="model-item">
+            <strong>{{ result.name }} -> {{ result.votes }} votes</strong>
+            <span>{{ result.candidate_id }}</span>
+            <p>{{ result.party }} | {{ result.constituency }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

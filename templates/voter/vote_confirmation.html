@@ -1,0 +1,20 @@
+{% extends 'voter/voter_layout.html' %}
+{% block title %}Vote Confirmation{% endblock %}
+{% block content %}
+<section class="form-wrapper">
+    <div class="form-copy">
+        <p class="eyebrow">Step 3</p>
+        <h1>Confirm your selection.</h1>
+        <p class="hero-copy">This extra confirmation helps prevent accidental voting.</p>
+    </div>
+    <div class="form-card">
+        <p class="eyebrow">You Selected</p>
+        <h2>{{ candidate.name if candidate else 'No Candidate Selected' }}</h2>
+        <p class="hero-copy">{{ candidate.party if candidate else '' }}</p>
+        <form action="{{ url_for('submit_vote') }}" method="POST" class="smart-form">
+            <button type="submit" name="decision" value="confirm" class="btn btn-primary form-submit">Confirm Vote</button>
+            <button type="submit" name="decision" value="cancel" class="btn btn-ghost form-submit">Cancel</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

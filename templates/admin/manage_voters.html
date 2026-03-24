@@ -1,0 +1,59 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Manage Voters{% endblock %}
+{% block content %}
+<section class="panel-card">
+    <p class="eyebrow">Manage Voters</p>
+    <h1>Registered voter records</h1>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Voter ID</th>
+                    <th>Name</th>
+                    <th>Constituency</th>
+                    <th>Voting Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for voter in voters %}
+                <tr>
+                    <td>{{ voter.voter_id }}</td>
+                    <td>{{ voter.name }}</td>
+                    <td>{{ voter.constituency }}</td>
+                    <td>{{ 'Voted' if voter.has_voted else 'Pending' }}</td>
+                    <td>
+                        <details class="inline-details">
+                            <summary>View / Edit</summary>
+                            <form method="POST" class="smart-form inline-form">
+                                <input type="hidden" name="action" value="edit">
+                                <input type="hidden" name="voter_id" value="{{ voter.voter_id }}">
+                                <label>Name</label>
+                                <input type="text" name="name" value="{{ voter.name }}" required>
+                                <label>Email</label>
+                                <input type="email" name="email" value="{{ voter.email }}" required>
+                                <label>Phone</label>
+                                <input type="text" name="phone" value="{{ voter.phone }}" required>
+                                <label>Constituency</label>
+                                <input type="text" name="constituency" value="{{ voter.constituency }}" required>
+                                <label>Status</label>
+                                <select name="registered" class="smart-select">
+                                    <option value="true" {% if voter.registered %}selected{% endif %}>Active</option>
+                                    <option value="false" {% if not voter.registered %}selected{% endif %}>Inactive</option>
+                                </select>
+                                <button type="submit" class="btn btn-secondary">Save</button>
+                            </form>
+                        </details>
+                        <form method="POST" class="inline-form-inline">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="voter_id" value="{{ voter.voter_id }}">
+                            <button type="submit" class="btn btn-ghost">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

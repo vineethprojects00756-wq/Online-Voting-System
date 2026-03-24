@@ -1,0 +1,32 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Logs{% endblock %}
+{% block content %}
+<section class="dashboard-grid dashboard-grid-wide">
+    <article class="panel-card">
+        <p class="eyebrow">System Events</p>
+        <h1>Recent device and voting logs</h1>
+        <div class="model-list">
+            {% for log in recent_device_logs %}
+            <div class="model-item">
+                <strong>{{ log.timestamp }}</strong>
+                <span>{{ log.event }}</span>
+                <p>{{ log.voter_id }} | {{ log.ip_address }} | {{ log.machine_id }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+    <article class="panel-card">
+        <p class="eyebrow">Pipeline Stages</p>
+        <h2>System role flow</h2>
+        <div class="flow-grid flow-grid-compact">
+            {% for stage in flow_stages %}
+            <article class="flow-card flow-card-static">
+                <span class="flow-index">{{ "%02d" % loop.index }}</span>
+                <h3>{{ stage.title }}</h3>
+                <p>{{ stage.description }}</p>
+            </article>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

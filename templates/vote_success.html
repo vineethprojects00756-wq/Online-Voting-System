@@ -1,0 +1,33 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Vote Submitted{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+
+{% block content %}
+<section class="dashboard-header">
+    <div>
+        <p class="eyebrow">Module 6</p>
+        <h1>Secure Vote Storage</h1>
+        <p class="hero-copy">
+            Your ballot has been encrypted and stored separately from voter identity to preserve the secret ballot.
+        </p>
+    </div>
+    <div class="hero-actions">
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">Return to Home</a>
+        {% if session.get('admin_authenticated') %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost">Admin Dashboard</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <article class="panel-card">
+        <h2>Vote Stored</h2>
+        <div class="metric-list">
+            <div><span>Vote ID</span><strong>{{ vote_id }}</strong></div>
+            <div><span>Constituency</span><strong>{{ constituency }}</strong></div>
+            <div><span>Identity Link</span><strong>Not stored with vote</strong></div>
+        </div>
+    </article>
+</section>
+{% endblock %}

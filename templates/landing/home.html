@@ -1,0 +1,158 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Smart Voting System{% endblock %}
+{% block main_class %}landing-page{% endblock %}
+
+{% block content %}
+<section class="hero-panel hero-panel-split hero-panel-split-modern palette-sunrise">
+    <div class="hero-lead">
+        <p class="eyebrow">Secure Digital Elections</p>
+        <div class="hero-kicker">
+            <strong>Modern Election Experience</strong>
+            <span>Simple access. Secure voting.</span>
+        </div>
+        <h1>Secure voting with a simpler user journey.</h1>
+        <p class="hero-copy">
+            Registration, verification, and vote casting in one clean flow.
+        </p>
+
+        {% if database_error %}
+        <p class="notice notice-danger">Database issue: {{ database_error }}</p>
+        {% endif %}
+        {% if opencv_error %}
+        <p class="notice">{{ opencv_error }}</p>
+        {% endif %}
+
+        <div class="hero-actions">
+            <a href="{{ url_for('signup') }}" class="btn btn-primary">Register as Voter</a>
+            <a href="{{ url_for('login') }}" class="btn btn-secondary">Voter Login</a>
+            {% if session.get('admin_authenticated') %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost">Open Admin Console</a>
+            {% else %}
+            <a href="{{ url_for('admin_login') }}" class="btn btn-ghost">Admin Login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <aside class="hero-visual-stack">
+        <div class="hero-visual-main" style="background-image: url('{{ url_for('static', filename='inp3.jpg') }}');">
+            <div class="hero-visual-caption">
+                <span>Election Day</span>
+                <strong>Built to feel clear, modern, and trustworthy.</strong>
+            </div>
+        </div>
+        <div class="hero-photo-grid">
+            <div class="hero-photo-card" style="background-image: url('{{ url_for('static', filename='inp1.jpg') }}');">
+                <strong>Citizen-focused entry flow</strong>
+            </div>
+            <div class="hero-photo-card" style="background-image: url('{{ url_for('static', filename='inp2.jpg') }}');">
+                <strong>Secure operations and voting</strong>
+            </div>
+        </div>
+    </aside>
+</section>
+
+<section class="feature-strip">
+    <article class="feature-card">
+        <p class="eyebrow">Access</p>
+        <h2>Guided voter flow</h2>
+        <p>Clear steps from login to ballot.</p>
+    </article>
+    <article class="feature-card">
+        <p class="eyebrow">Security</p>
+        <h2>Verified access</h2>
+        <p>OTP, face verification, and vote protection.</p>
+    </article>
+    <article class="feature-card">
+        <p class="eyebrow">Control</p>
+        <h2>Admin ready</h2>
+        <p>Dashboard tools for election management.</p>
+    </article>
+</section>
+
+<section class="metrics-grid">
+    <article class="metric-card">
+        <span class="metric-label">Registered Citizens</span>
+        <strong class="metric-value">{{ metrics.registered_citizens if metrics else "N/A" }}</strong>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Face Datasets</span>
+        <strong class="metric-value">{{ metrics.face_datasets if metrics else "N/A" }}</strong>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Stored Votes</span>
+        <strong class="metric-value">{{ metrics.votes_stored if metrics else "N/A" }}</strong>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Audit Events</span>
+        <strong class="metric-value">{{ metrics.audit_events if metrics else "N/A" }}</strong>
+    </article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-balanced">
+    <article class="panel-card">
+        <div class="section-heading">
+            <p class="eyebrow">Flow</p>
+            <h2>Voting journey</h2>
+        </div>
+        <div class="mini-step-list">
+            <div>Register</div>
+            <div>Login</div>
+            <div>Verify</div>
+            <div>Vote</div>
+        </div>
+    </article>
+
+    <article class="panel-card palette-ocean">
+        <div class="section-heading">
+            <p class="eyebrow">Recognition Model Options</p>
+            <h2>Active model choices</h2>
+        </div>
+        <div class="model-list">
+            {% for model in recognition_models %}
+            <div class="model-item">
+                <strong>{{ model.name }}</strong>
+                <span>{{ model.tag }} - {{ model.status }}</span>
+                <p>{{ model.summary }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel-card palette-rose">
+        <div class="section-heading">
+            <p class="eyebrow">Recent</p>
+            <h2>Latest voters</h2>
+        </div>
+        {% if recent_voters %}
+        <div class="model-list">
+            {% for voter in recent_voters %}
+            <div class="model-item">
+                <strong>{{ voter.voter_id }} - {{ voter.name }}</strong>
+                <span>{{ voter.constituency }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-copy">No voter registrations yet.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="flow-section palette-violet">
+    <div class="section-heading">
+        <p class="eyebrow">Modules</p>
+        <h2>Explore the system</h2>
+    </div>
+
+    <div class="flow-grid">
+        {% for stage in flow_stages %}
+        <a href="{{ stage.route }}" class="flow-card">
+            <span class="flow-index">{{ "%02d" % loop.index }}</span>
+            <h3>{{ stage.title }}</h3>
+            <p>{{ stage.description }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

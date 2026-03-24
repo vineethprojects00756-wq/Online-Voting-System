@@ -1,0 +1,26 @@
+﻿{% extends 'layouts/base.html' %}
+
+{% block title %}Admin Console{% endblock %}
+{% block body_class %}app-shell{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+{% block head_extra %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block navbar %}
+{% include 'components/navbar_admin.html' %}
+{% endblock %}
+
+{% block content %}
+<section class="admin-layout-grid">
+    {% include 'components/sidebar_admin.html' %}
+    <div class="admin-content">
+        {% block admin_content %}{% endblock %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

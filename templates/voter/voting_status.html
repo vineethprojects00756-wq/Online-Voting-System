@@ -1,0 +1,19 @@
+{% extends 'voter/voter_layout.html' %}
+{% block title %}Voting Status{% endblock %}
+{% block content %}
+<section class="hero-panel hero-panel-split">
+    <div>
+        <p class="eyebrow">Voting Status</p>
+        <h1>Track your current voting state.</h1>
+        <p class="hero-copy">Review whether your vote is still pending or has already been completed.</p>
+    </div>
+    <aside class="hero-sidecard">
+        <p class="eyebrow">Status Summary</p>
+        <div class="hero-mini-grid">
+            <div class="info-tile"><span>Voting completed</span><strong>{{ 'Yes' if voter and voter.has_voted else 'No' }}</strong></div>
+            <div class="info-tile"><span>Timestamp</span><strong>{{ session.get('vote_timestamp', 'Pending') }}</strong></div>
+            <div class="info-tile"><span>Election status</span><strong>{{ election_state.status }}</strong></div>
+        </div>
+    </aside>
+</section>
+{% endblock %}

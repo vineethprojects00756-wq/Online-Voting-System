@@ -1,0 +1,16 @@
+{% extends 'voter/voter_layout.html' %}
+{% block title %}Vote Denied{% endblock %}
+{% block content %}
+<section class="hero-panel">
+    <p class="eyebrow">Voting Blocked</p>
+    <h1>Vote Denied</h1>
+    <p class="hero-copy">
+        This voter session cannot continue to ballot casting. The most common reason is duplicate voting prevention
+        or an incomplete verification state.
+    </p>
+    <div class="hero-actions">
+        <a href="{{ url_for('voting_status') }}" class="btn btn-secondary">Check Voting Status</a>
+        <a href="{{ url_for('voter_logout') }}" class="btn btn-ghost">Logout</a>
+    </div>
+</section>
+{% endblock %}

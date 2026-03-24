@@ -1,0 +1,52 @@
+{% extends 'admin/admin_layout.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<section class="hero-panel hero-panel-split">
+    <div>
+        <p class="eyebrow">Admin Dashboard</p>
+        <h1>Monitor election operations.</h1>
+        <p class="hero-copy">Track registration, turnout, votes cast, and the current election state from one control center.</p>
+    </div>
+    <aside class="hero-sidecard">
+        <p class="eyebrow">Election Status</p>
+        <div class="hero-mini-grid">
+            <div class="info-tile"><span>Status</span><strong>{{ election_state.status }}</strong></div>
+            <div class="info-tile"><span>Turnout</span><strong>{{ turnout_percentage }}%</strong></div>
+        </div>
+    </aside>
+</section>
+
+<section class="metrics-grid admin-metrics-grid">
+    <article class="metric-card"><span class="metric-label">Total Registered Voters</span><strong class="metric-value">{{ metrics.registered_citizens if metrics else 'N/A' }}</strong></article>
+    <article class="metric-card"><span class="metric-label">Votes Cast</span><strong class="metric-value">{{ metrics.votes_cast if metrics else 'N/A' }}</strong></article>
+    <article class="metric-card"><span class="metric-label">Remaining Voters</span><strong class="metric-value">{{ metrics.remaining_voters if metrics else 'N/A' }}</strong></article>
+    <article class="metric-card"><span class="metric-label">Election Status</span><strong class="metric-value">{{ election_state.status }}</strong></article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-wide">
+    <article class="panel-card">
+        <h2>Recent Voter Activity</h2>
+        <div class="model-list">
+            {% for voter in recent_voters %}
+            <div class="model-item">
+                <strong>{{ voter.voter_id }} | {{ voter.name }}</strong>
+                <span>{{ voter.constituency }}</span>
+                <p>Registered: {{ voter.registered }} | Has voted: {{ voter.has_voted }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+    <article class="panel-card">
+        <h2>Live Result Snapshot</h2>
+        <div class="model-list">
+            {% for result in vote_results %}
+            <div class="model-item">
+                <strong>{{ result.name }}</strong>
+                <span>{{ result.party }}</span>
+                <p>{{ result.votes }} votes</p>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

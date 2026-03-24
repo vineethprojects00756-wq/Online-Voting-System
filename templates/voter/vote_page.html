@@ -1,0 +1,38 @@
+{% extends 'voter/voter_layout.html' %}
+{% block title %}Vote Page{% endblock %}
+{% block content %}
+<section class="hero-panel hero-panel-split">
+    <div>
+        <p class="eyebrow">Step 2</p>
+        <h1>Cast Your Vote</h1>
+        <p class="hero-copy">Select a candidate for your constituency. Your selection will be reviewed once more before final submission.</p>
+    </div>
+    <aside class="hero-sidecard">
+        <p class="eyebrow">Voter</p>
+        <div class="hero-mini-grid">
+            <div class="info-tile"><span>Name</span><strong>{{ voter.name }}</strong></div>
+            <div class="info-tile"><span>Voter ID</span><strong>{{ voter.voter_id }}</strong></div>
+            <div class="info-tile"><span>Constituency</span><strong>{{ voter.constituency }}</strong></div>
+        </div>
+    </aside>
+</section>
+
+<section class="panel-card">
+    <h2>Candidate Cards</h2>
+    <form method="POST" class="smart-form">
+        <div class="candidate-card-grid">
+            {% for candidate in candidates %}
+            <label class="candidate-card">
+                <input type="radio" name="candidate_id" value="{{ candidate.id }}" required>
+                <div class="candidate-avatar">{{ candidate.name[:1] }}</div>
+                <strong>{{ candidate.name }}</strong>
+                <span>{{ candidate.party }}</span>
+                <small>{{ voter.constituency }}</small>
+                <span class="btn btn-ghost card-vote-chip">Vote</span>
+            </label>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Continue to Confirmation</button>
+    </form>
+</section>
+{% endblock %}
