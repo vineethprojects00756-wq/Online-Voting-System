@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import numpy as np
-from flask import Flask, Response, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, session, url_for, has_request_context
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -154,6 +154,17 @@ current_authentication = {
 }
 
 
+def persist_current_authentication():
+    if has_request_context():
+        session['current_authentication'] = current_authentication
+
+
+def get_current_authentication():
+    if has_request_context():
+        return session.get('current_authentication', current_authentication)
+    return current_authentication
+
+
 def extract_face(image):
     return capture_face(image, face_cascade, cv2)
 
@@ -175,6 +186,7 @@ def reset_authentication_state():
         "liveness_passed": False,
         "liveness_message": "Awaiting liveness cues.",
     }
+    persist_current_authentication()
 
 
 def update_authentication_state(
@@ -200,6 +212,7 @@ def update_authentication_state(
         "liveness_passed": liveness_passed,
         "liveness_message": liveness_message,
     }
+    persist_current_authentication()
 
 
 def is_admin_authenticated():
@@ -972,6 +985,7 @@ def stop_stream():
         camera.release()
         camera = None
     reset_authentication_state()
+    session.pop('current_authentication', None)
     session.pop('otp_verified', None)
     session.pop('aadhar', None)
     session.pop('otp', None)
@@ -981,7 +995,7 @@ def stop_stream():
 
 @app.route('/status')
 def status():
-    return jsonify(current_authentication)
+    return jsonify(get_current_authentication())
 
 
 @app.route('/health')
@@ -1245,10 +1259,11 @@ def admin_logs():
 
 
 def has_vote_access():
+    auth_state = get_current_authentication()
     return (
         session.get('otp_verified')
-        and current_authentication.get("decision") == "allow"
-        and current_authentication.get("voter_id")
+        and auth_state.get("decision") == "allow"
+        and auth_state.get("voter_id")
         and is_election_active()
     )
 
@@ -1260,7 +1275,7 @@ def vote():
     if not has_vote_access():
         return redirect(url_for('face_verification'))
 
-    voter_id = current_authentication.get("voter_id")
+    voter_id = get_current_authentication().get("voter_id")
     voter = get_voter_by_voter_id(voter_id) if get_voter_by_voter_id is not None else None
     if voter is None:
         return validation_error("Voter record unavailable for vote casting.", 'voter/face_verification.html')
@@ -1297,7 +1312,7 @@ def submit_vote():
     if not has_vote_access():
         return redirect(url_for('face_verification'))
 
-    voter_id = current_authentication.get("voter_id")
+    voter_id = get_current_authentication().get("voter_id")
     voter = get_voter_by_voter_id(voter_id) if get_voter_by_voter_id is not None else None
     if voter is None:
         return redirect(url_for('voter_dashboard'))

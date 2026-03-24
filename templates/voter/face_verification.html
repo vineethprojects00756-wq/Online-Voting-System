@@ -167,7 +167,7 @@
 
             if (data.decision === 'allow' && data.redirect) {
                 consecutiveAllows += 1;
-                if (consecutiveAllows >= 2) {
+                if (consecutiveAllows >= 1) {
                     window.location.href = data.redirect;
                     return;
                 }
@@ -185,7 +185,7 @@
         if (scanTimer) {
             return;
         }
-        scanTimer = setInterval(analyzeLiveFrame, 700);
+        scanTimer = setInterval(analyzeLiveFrame, 450);
     }
 
     function stopLiveScan() {
