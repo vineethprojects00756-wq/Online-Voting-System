@@ -1,6 +1,8 @@
 import hashlib
 import os
 import random
+import base64
+import binascii
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -313,6 +315,154 @@ def evaluate_voter_authentication(identity, expected_aadhar, confidence, livenes
         "face_match": True,
         "voter": voter,
     }
+
+
+def decode_browser_image(data_url):
+    if not data_url or "," not in data_url or cv2 is None:
+        return None
+
+    _header, encoded = data_url.split(",", 1)
+    try:
+        image_bytes = base64.b64decode(encoded)
+    except (ValueError, binascii.Error):
+        return None
+
+    buffer = np.frombuffer(image_bytes, dtype=np.uint8)
+    image = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+    return image
+
+
+def verify_browser_frames(expected_aadhar, images):
+    global previous_face_box, last_auth_audit_signature
+
+    if not images:
+        update_authentication_state("No camera frames received. Please allow webcam access and try again.")
+        return {
+            "status": "retry",
+            "message": "No camera frames received.",
+        }, 400
+
+    if not is_opencv_available():
+        return {"status": "error", "message": OPENCV_ERROR}, 503
+
+    if not is_database_available():
+        return {"status": "error", "message": f"Database unavailable: {DATABASE_ERROR}"}, 503
+
+    if recognizer is None or not label_to_identity:
+        trained = train_recognizer()
+        if not trained or recognizer is None:
+            update_authentication_state("Face recognition model is unavailable.", decision="reject")
+            return {"status": "error", "message": "Face recognition model is unavailable."}, 503
+
+    detections = []
+    local_previous_face_box = previous_face_box
+
+    for data_url in images:
+        frame = decode_browser_image(data_url)
+        if frame is None:
+            continue
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, 1.1, 4) if face_cascade is not None else []
+        if len(faces) == 0:
+            continue
+
+        x, y, w, h = max(faces, key=lambda face: face[2] * face[3])
+        face_roi = gray[y:y + h, x:x + w]
+        if face_roi.size == 0:
+            continue
+
+        face_resized = cv2.resize(face_roi, (200, 200))
+        face_resized = cv2.equalizeHist(face_resized)
+        eye_count = 0
+        if eye_cascade is not None:
+            eyes = eye_cascade.detectMultiScale(face_roi)
+            eye_count = len(eyes)
+
+        try:
+            label, confidence = recognizer.predict(face_resized)
+        except cv2.error:
+            continue
+
+        identity = label_to_identity.get(label, {})
+        liveness_result = evaluate_liveness((x, y, w, h), local_previous_face_box, eye_count)
+        local_previous_face_box = (x, y, w, h)
+        detections.append(
+            {
+                "identity": identity,
+                "confidence": round(float(confidence), 2),
+                "liveness": liveness_result,
+            }
+        )
+
+    previous_face_box = local_previous_face_box
+
+    if not detections:
+        update_authentication_state(
+            "No recognizable face detected. Center your face in the frame and try again.",
+            decision="retry",
+            liveness_message="No face detected.",
+        )
+        return {
+            "status": "retry",
+            "message": "No recognizable face detected. Try again with better lighting.",
+        }, 400
+
+    best_detection = min(detections, key=lambda item: item["confidence"])
+    combined_liveness = {
+        "is_live": any(item["liveness"]["is_live"] for item in detections),
+        "message": "; ".join(
+            list(dict.fromkeys(item["liveness"]["message"] for item in detections))
+        ),
+    }
+    auth_result = evaluate_voter_authentication(
+        best_detection["identity"],
+        expected_aadhar,
+        best_detection["confidence"],
+        combined_liveness,
+    )
+    voter = auth_result.get("voter")
+    update_authentication_state(
+        auth_result["status"],
+        decision=auth_result["decision"],
+        face_match=auth_result["face_match"],
+        voter=voter,
+        confidence=best_detection["confidence"],
+        liveness_passed=combined_liveness["is_live"],
+        liveness_message=combined_liveness["message"],
+    )
+
+    matched_aadhar = best_detection["identity"].get("aadhar")
+    audit_signature = (auth_result["decision"], auth_result["status"], matched_aadhar)
+    if (
+        log_audit_event is not None
+        and auth_result["decision"] != "pending"
+        and audit_signature != last_auth_audit_signature
+    ):
+        log_audit_event("authentication_decision", auth_result["status"], matched_aadhar)
+        last_auth_audit_signature = audit_signature
+
+    if auth_result["decision"] == "allow":
+        return {
+            "status": "verified",
+            "message": "Face verified successfully.",
+            "redirect": url_for('vote'),
+            "voter_id": voter["voter_id"] if voter else None,
+        }, 200
+
+    if auth_result["decision"] == "retry":
+        return {
+            "status": "retry",
+            "message": auth_result["status"],
+        }, 400
+
+    redirect_target = url_for('vote_denied') if auth_result["face_match"] else None
+    return {
+        "status": "denied",
+        "message": auth_result["status"],
+        "redirect": redirect_target,
+        "voter_id": voter["voter_id"] if voter else None,
+    }, 403
 
 
 def train_recognizer():
@@ -794,6 +944,12 @@ def verify_face():
     voter = get_voter_session_record()
     if voter is None:
         return jsonify({"status": "not_found", "message": "Voter record unavailable."}), 404
+
+    payload = request.get_json(silent=True) or {}
+    browser_images = payload.get("images") if isinstance(payload, dict) else None
+    if browser_images:
+        response_body, status_code = verify_browser_frames(voter["aadhaar"], browser_images)
+        return jsonify(response_body), status_code
 
     status_result = check_voting_status(voter["voter_id"]) if check_voting_status is not None else None
     if not status_result:

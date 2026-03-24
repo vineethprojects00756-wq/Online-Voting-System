@@ -4,23 +4,21 @@
 <section class="hero-panel">
     <p class="eyebrow">Step 1</p>
     <h1>Face Verification</h1>
-    <p class="hero-copy">Use the live webcam feed or run guided verification to authenticate the voter before eligibility check.</p>
+    <p class="hero-copy">Allow camera access, look at the lens, blink once, and move slightly so the system can scan and verify your identity.</p>
 </section>
 
 <section class="dashboard-grid dashboard-grid-balanced">
     <article class="panel-card">
         <h2>Webcam Window</h2>
-        {% if camera_error %}
-        <p class="notice">{{ camera_error }}</p>
+        {% if opencv_error %}
+        <p class="notice notice-danger">{{ opencv_error }}</p>
         {% endif %}
-        {% if server_camera_enabled %}
-        <img src="{{ url_for('video_feed') }}" alt="Face Recognition Stream" class="camera-feed">
-        {% else %}
-        <div class="notice">Live stream unavailable in this deployment. Guided verification remains available below.</div>
-        {% endif %}
+        <video id="cameraPreview" class="camera-feed" autoplay playsinline muted></video>
+        <canvas id="captureCanvas" hidden></canvas>
         <div class="hero-actions">
-            <button type="button" class="btn btn-primary" id="captureBtn">Capture & Verify</button>
-            <a href="{{ url_for('stop_stream') }}" class="btn btn-ghost">Stop Camera</a>
+            <button type="button" class="btn btn-primary" id="startCameraBtn">Start Camera</button>
+            <button type="button" class="btn btn-secondary" id="captureBtn">Scan & Verify</button>
+            <a href="{{ url_for('stop_stream') }}" class="btn btn-ghost">Stop Session</a>
         </div>
     </article>
     <article class="panel-card">
@@ -30,20 +28,61 @@
             <div><span>Verification Result</span><strong id="authDecision">pending</strong></div>
             <div><span>Status Message</span><strong id="authStatus">Waiting for face...</strong></div>
             <div><span>Voter ID</span><strong id="authVoterId">-</strong></div>
+            <div><span>Confidence</span><strong id="authConfidence">-</strong></div>
+            <div><span>Liveness</span><strong id="authLiveness">false</strong></div>
         </div>
-        <p class="notice" id="verifyMessage">Capture a clear frame and continue to the next step.</p>
+        <p class="notice" id="verifyMessage">Start the camera, then blink or move slightly before you scan.</p>
     </article>
     <article class="panel-card">
-        <h2>Next Step</h2>
+        <h2>How To Pass</h2>
         <div class="mini-step-list">
-            <div>Verification checks identity and eligibility together.</div>
-            <div>If the voter has already voted, access is denied.</div>
-            <div>If verified, the voter is redirected to the ballot page.</div>
+            <div>Keep your face centered and well lit.</div>
+            <div>Blink once or move your head slightly for liveness.</div>
+            <div>Hold still for a moment while three quick frames are captured.</div>
         </div>
     </article>
 </section>
 
 <script>
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('captureCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const verifyMessage = document.getElementById('verifyMessage');
+    let stream = null;
+
+    async function startCamera() {
+        if (stream) {
+            return true;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            verifyMessage.innerText = 'This browser does not support webcam access.';
+            return false;
+        }
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            });
+            video.srcObject = stream;
+            verifyMessage.innerText = 'Camera ready. Blink once and click Scan & Verify.';
+            return true;
+        } catch (error) {
+            verifyMessage.innerText = 'Camera access was blocked. Allow webcam permission and try again.';
+            return false;
+        }
+    }
+
+    function stopCamera() {
+        if (!stream) {
+            return;
+        }
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+
     function updateStatus() {
         fetch('{{ url_for("status") }}')
             .then(response => response.json())
@@ -52,25 +91,62 @@
                 document.getElementById("authDecision").innerText = data.decision;
                 document.getElementById("authFaceMatch").innerText = String(data.face_match);
                 document.getElementById("authVoterId").innerText = data.voter_id || "-";
+                document.getElementById("authConfidence").innerText = data.confidence === null ? "-" : String(data.confidence);
+                document.getElementById("authLiveness").innerText = String(data.liveness_passed);
             });
     }
 
-    function sendToServer() {
-        fetch('{{ url_for("verify_face") }}', {
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function captureFrames() {
+        const frames = [];
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const context = canvas.getContext('2d');
+
+        for (let index = 0; index < 3; index += 1) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            frames.push(canvas.toDataURL('image/jpeg', 0.9));
+            await wait(350);
+        }
+
+        return frames;
+    }
+
+    async function sendToServer() {
+        captureBtn.disabled = true;
+        verifyMessage.innerText = 'Capturing frames and verifying identity...';
+
+        const ready = await startCamera();
+        if (!ready) {
+            captureBtn.disabled = false;
+            return;
+        }
+
+        const frames = await captureFrames();
+        const response = await fetch('{{ url_for("verify_face") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'capture' })
-        })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('verifyMessage').innerText = data.message || 'Verification processed.';
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                }
-            });
+            body: JSON.stringify({ images: frames })
+        });
+        const data = await response.json();
+        verifyMessage.innerText = data.message || 'Verification processed.';
+        updateStatus();
+
+        if (data.redirect) {
+            window.location.href = data.redirect;
+            return;
+        }
+
+        captureBtn.disabled = false;
     }
 
-    document.getElementById('captureBtn').addEventListener('click', sendToServer);
+    startCameraBtn.addEventListener('click', startCamera);
+    captureBtn.addEventListener('click', sendToServer);
+    window.addEventListener('beforeunload', stopCamera);
+    startCamera();
     updateStatus();
     setInterval(updateStatus, 800);
 </script>
