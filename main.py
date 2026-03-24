@@ -37,6 +37,7 @@ try:
         initialize_database,
         log_device_activity,
         log_audit_event,
+        backfill_face_dataset_binaries,
         remove_candidate,
         reset_election,
         store_vote,
@@ -64,6 +65,7 @@ except Exception as exc:
     initialize_database = None
     log_device_activity = None
     log_audit_event = None
+    backfill_face_dataset_binaries = None
     remove_candidate = None
     reset_election = None
     store_vote = None
@@ -495,6 +497,8 @@ def train_recognizer():
         voter_id = row.get("voter_id")
         image_path = row.get("image_path")
         dataset_path = row.get("face_dataset_path")
+        profile_image_data = row.get("profile_image_data")
+        sample_images = row.get("sample_images") or []
 
         def add_sample(sample_image):
             if sample_image is None:
@@ -504,6 +508,17 @@ def train_recognizer():
             samples.append(sample_image)
             labels.append(label)
 
+        def decode_base64_image(encoded_value, grayscale=False):
+            if not encoded_value:
+                return None
+            try:
+                image_bytes = base64.b64decode(encoded_value)
+            except (ValueError, binascii.Error):
+                return None
+            buffer = np.frombuffer(image_bytes, dtype=np.uint8)
+            mode = cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_COLOR
+            return cv2.imdecode(buffer, mode)
+
         if dataset_path and os.path.isdir(dataset_path):
             for file_name in os.listdir(dataset_path):
                 if not file_name.lower().endswith((".jpg", ".jpeg", ".png")):
@@ -511,9 +526,25 @@ def train_recognizer():
                 file_path = os.path.join(dataset_path, file_name)
                 image = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
                 add_sample(image)
+        elif sample_images:
+            for encoded_image in sample_images:
+                image = decode_base64_image(encoded_image, grayscale=True)
+                add_sample(image)
 
         if image_path and os.path.exists(image_path):
             image = cv2.imread(image_path)
+            if image is not None:
+                face = extract_face(image)
+                if face is None:
+                    gray = (
+                        image
+                        if hasattr(image, "shape") and len(image.shape) == 2
+                        else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    )
+                    face = cv2.resize(gray, (200, 200))
+                add_sample(face)
+        elif profile_image_data:
+            image = decode_base64_image(profile_image_data)
             if image is not None:
                 face = extract_face(image)
                 if face is None:
@@ -657,6 +688,12 @@ def setup_runtime_dependencies():
     except Exception as exc:
         DATABASE_ERROR = str(exc)
         return
+
+    if backfill_face_dataset_binaries is not None:
+        try:
+            backfill_face_dataset_binaries()
+        except Exception:
+            pass
 
     train_recognizer()
 
@@ -810,6 +847,19 @@ def signup():
                 )
 
             image_path = dataset_info["profile_image_path"] or temp_image_paths[0]
+            profile_image_data = None
+            sample_images = []
+            if image_path and os.path.exists(image_path):
+                with open(image_path, "rb") as image_file:
+                    profile_image_data = base64.b64encode(image_file.read()).decode("utf-8")
+            dataset_path = dataset_info["dataset_path"]
+            if dataset_path and os.path.isdir(dataset_path):
+                for file_name in sorted(os.listdir(dataset_path)):
+                    if not file_name.lower().endswith((".jpg", ".jpeg", ".png")):
+                        continue
+                    file_path = os.path.join(dataset_path, file_name)
+                    with open(file_path, "rb") as image_file:
+                        sample_images.append(base64.b64encode(image_file.read()).decode("utf-8"))
             user_created = create_user(
                 voter_id,
                 name,
@@ -820,8 +870,10 @@ def signup():
                 aadhar,
                 password,
                 image_path,
-                dataset_info["dataset_path"],
+                dataset_path,
                 dataset_info["sample_count"],
+                profile_image_data=profile_image_data,
+                sample_images=sample_images,
             )
         except ValueError as exc:
             for path in temp_image_paths:

@@ -75,6 +75,7 @@ def load_main_module():
         "remaining_voters": 0,
     }
     mongo_stub.initialize_database = lambda: None
+    mongo_stub.backfill_face_dataset_binaries = lambda: {"updated": 0, "skipped": 0}
     mongo_stub.get_registration_overview = lambda limit=5: []
     mongo_stub.get_available_constituencies = lambda: ["Vizag"]
     mongo_stub.get_all_voters = lambda: [

@@ -1,4 +1,5 @@
 import os
+import base64
 from datetime import UTC, datetime
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -115,12 +116,42 @@ def initialize_database() -> None:
         )
 
 
+def _read_file_base64(path: Optional[str]) -> Optional[str]:
+    if not path or not os.path.exists(path):
+        return None
+    with open(path, "rb") as file_handle:
+        return base64.b64encode(file_handle.read()).decode("utf-8")
+
+
+def _read_dataset_images_base64(dataset_path: Optional[str]) -> List[str]:
+    if not dataset_path or not os.path.isdir(dataset_path):
+        return []
+
+    encoded_images = []
+    for file_name in sorted(os.listdir(dataset_path)):
+        if not file_name.lower().endswith((".jpg", ".jpeg", ".png")):
+            continue
+        file_path = os.path.join(dataset_path, file_name)
+        encoded = _read_file_base64(file_path)
+        if encoded:
+            encoded_images.append(encoded)
+    return encoded_images
+
+
 def get_face_records() -> List[Dict[str, str]]:
     datasets = get_face_dataset_collection()
     return list(
         datasets.find(
             {},
-            {"_id": 0, "voter_id": 1, "aadhaar": 1, "image_path": 1, "face_dataset_path": 1},
+            {
+                "_id": 0,
+                "voter_id": 1,
+                "aadhaar": 1,
+                "image_path": 1,
+                "face_dataset_path": 1,
+                "profile_image_data": 1,
+                "sample_images": 1,
+            },
         )
     )
 
@@ -200,6 +231,8 @@ def create_user(
     image_path: str,
     face_dataset_path: str,
     sample_count: int,
+    profile_image_data: Optional[str] = None,
+    sample_images: Optional[List[str]] = None,
 ) -> bool:
     users = get_users_collection()
     face_datasets = get_face_dataset_collection()
@@ -222,6 +255,8 @@ def create_user(
                     "model": "LBPH",
                     "dataset_path": face_dataset_path,
                 },
+                "profile_image_data": profile_image_data,
+                "sample_images": sample_images or [],
                 "registered": True,
                 "has_voted": False,
                 "registration_status": "registered",
@@ -236,6 +271,8 @@ def create_user(
                 "image_path": image_path,
                 "face_dataset_path": face_dataset_path,
                 "sample_count": sample_count,
+                "profile_image_data": profile_image_data,
+                "sample_images": sample_images or [],
                 "dataset_status": "captured",
                 "source": "registration_upload",
                 "created_at": now,
@@ -249,6 +286,36 @@ def create_user(
         return True
     except DuplicateKeyError:
         return False
+
+
+def backfill_face_dataset_binaries() -> Dict[str, int]:
+    users = get_users_collection()
+    face_datasets = get_face_dataset_collection()
+    updated = 0
+    skipped = 0
+
+    for dataset in face_datasets.find({}, {"_id": 0, "aadhaar": 1, "image_path": 1, "face_dataset_path": 1, "profile_image_data": 1, "sample_images": 1}):
+        profile_image_data = dataset.get("profile_image_data")
+        sample_images = dataset.get("sample_images") or []
+        if profile_image_data and sample_images:
+            skipped += 1
+            continue
+
+        encoded_profile = profile_image_data or _read_file_base64(dataset.get("image_path"))
+        encoded_samples = sample_images or _read_dataset_images_base64(dataset.get("face_dataset_path"))
+        if not encoded_profile and not encoded_samples:
+            skipped += 1
+            continue
+
+        update_fields = {
+            "profile_image_data": encoded_profile,
+            "sample_images": encoded_samples,
+        }
+        face_datasets.update_one({"aadhaar": dataset["aadhaar"]}, {"$set": update_fields})
+        users.update_one({"aadhaar": dataset["aadhaar"]}, {"$set": update_fields})
+        updated += 1
+
+    return {"updated": updated, "skipped": skipped}
 
 
 def find_user_by_credentials(aadhar: str, password: str) -> Optional[Dict]:
