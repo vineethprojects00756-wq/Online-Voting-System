@@ -121,7 +121,7 @@ git push -u origin main
 Use these values if you create the service manually:
 
 - Build command: `pip install -r requirements.txt`
-- Start command: `gunicorn wsgi:app`
+- Start command: `gunicorn wsgi:application`
 - Health check path: `/health`
 
 Set these environment variables:
