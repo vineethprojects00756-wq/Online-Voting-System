@@ -8,7 +8,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.14.3
+        value: 3.11.11
       - key: PRESENTATION_MODE
         value: "true"
       - key: ALLOW_SERVER_CAMERA

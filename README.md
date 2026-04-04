@@ -73,6 +73,8 @@ This project originally streams the webcam from the server process through OpenC
 - `PRESENTATION_MODE=true`
 - `ALLOW_SERVER_CAMERA=false`
 
+The project also uses `opencv-contrib-python-headless` for deployment so face-processing features can run without desktop GUI libraries.
+
 In this mode, the live server camera feed is disabled, but the guided verification flow still works for presentation and navigation demos.
 
 ## Health Check
@@ -126,7 +128,7 @@ Use these values if you create the service manually:
 
 Set these environment variables:
 
-- `PYTHON_VERSION=3.14.3`
+- `PYTHON_VERSION=3.11.11`
 - `PRESENTATION_MODE=true`
 - `ALLOW_SERVER_CAMERA=false`
 - `FLASK_SECRET_KEY=<random-secret>`
